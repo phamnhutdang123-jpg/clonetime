@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="vi" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Time.is - Thời gian chính xác, bất kỳ múi giờ nào</title>
+    <meta name="viewport" content="user-scalable=0, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* Loại bỏ toàn bộ khoảng trắng mặc định của trình duyệt ở phía trên */
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+        *{margin:0;padding:0;border:0;outline:0}
+        div,h1,h2,h3,label,time{clear:both}
+        span a,.nw,#clock{white-space:nowrap}
+        body,select,input,textarea{font:18px/26px 'Montserrat', Arial, 'Helvetica Neue', Helvetica, sans-serif;color:#333;letter-spacing:2px}
+                
+        /* Nhúng font TimeTraveler từ thư mục local /fonts/ */
+        @font-face{
+            font-family:'TimeTraveler';
+            font-style:normal;
+            font-weight:400;
+            src:url('fonts/TimeTravelerPal-Normal-Regular.ttf') format('truetype');
+        }
+        
+        /* Căn giữa hoàn toàn đồng hồ số */
+        #clock0_bg {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 25px 0 20px 0;
+            clear: both;
+        }
+
+        #clock {
+            font-family:'TimeTraveler', 'Arial Black', Gadget, sans-serif !important;
+            font-size:114px;
+            line-height:79px;
+            font-weight:900;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            color: #333333 !important; /* Đổi màu đồng hồ lớn sang #333333 theo yêu cầu */
+            float: none !important;
+        }
+        #clock span{display:inline-block;text-align:center}
+        .digit1, .digit2, .digit3, .digit4, .digit5, .digit6{width:99px;margin-left:-24px}
+        .sep{width:59px;margin-left:-24px}
+
+        div.lg a:link,div.lg a:visited{text-transform:uppercase;font-weight:600;font-size:16px;padding:20px 30px;letter-spacing:3px}
+        blockquote{font-weight:900}
+        .divider{color:#ccc}
+        a:link,a:visited{color:#333;text-decoration:none;border-bottom:1px solid #ccc}
+        h1,h2,.clockdate,.clockplace{font-size:36px;line-height:40px;font-weight:normal;letter-spacing:1px}
+        .w90{margin-left:5%;width:90%}
+        #c{padding-bottom:40px}
+        
+        /* Màu nền logo Time.is chuẩn #cc3355 */
+        .lg a:link,.lg a:visited{background:#cc3355;display:inline-block;color:#fff;border:0;padding:5px 12px;font:14px/20px Montserrat,Arial,sans-serif;font-weight:800;letter-spacing:0.5px}
+        .lg{z-index:9;position:relative;display:flex;align-items:center;gap:15px;float:left}
+                
+        /* Bảng chỉnh giờ và nội dung ẩn mở rộng khi rê chuột */
+        .hidden-control-panel {
+            font-size: 11px;
+            background: #f1f1f1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: absolute;
+            top: 45px;
+            left: 0;
+            z-index: 99;
+            width: 260px;
+        }
+        .lg:hover .hidden-control-panel { display: flex; }
+        .hidden-control-panel .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .hidden-control-panel input[type="number"] { width: 45px; text-align: center; font-size: 11px; padding: 2px; font-weight: bold; border: 1px solid #ccc; }
+        .hidden-control-panel input[type="text"] { width: 170px; font-size: 11px; padding: 2px; border: 1px solid #ccc; }
+        
+        /* Đưa padding-top về 0 để dính sát cạnh trên */
+        #top{width:90%;margin:0 5%;padding-top:0px;display:flex;justify-content:space-between;align-items:center}
+        #clock0,.clockplace,#lC,.clockdate,#daydiv{text-align:right}
+        select{height:40px}
+        #pL a:link,#pL a:visited,#pL1 a,#lC,#daydiv,#daydiv1{color:#333}
+        
+        /* Căn lề phải cho các thành phố ưa thích */
+        #favs{width:100%;list-style:none;margin:0 0 10px 0;padding:0;display:flex;gap:3px;justify-content:flex-end;float:right}
+        #favs li{background-color:#ededed;padding:6px 12px;text-align:center;min-width:85px;float:none}
+        #favs li.highlight{background-color:#999999;color:#fff}
+        #favs li.highlight a{color:#fff}
+        
+        /* Tên thành phố BOLD (#333333), giờ của thành phố KHÔNG BOLD */
+        #favs a { border:none; background:none; padding:0; margin:0; display:block; font-weight: bold; color: #333333; }
+        #favs span { font-weight: normal; color: #333333; font-size: 0.9rem; }
+                
+        .top_cities_cloud{background-color:#222222;color:#cccccc;padding:35px 50px;text-align:center;margin-top:40px;clear:both;float:left;width:100%;box-sizing:border-box}
+        .cloud{max-width:1250px;margin:0 auto;font-size:1.05rem;line-height:2.2;color:#cccccc}
+        .cloud a{color:#cccccc;border:none;margin:0 8px}
+        #quote{text-align:center;padding:30px;font-style:italic;clear:both;float:left;width:100%;box-sizing:border-box}
+        
+        /* Nhóm icon bên phải chuẩn kích thước và tone màu #444 */
+        .right-icons {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .icon-item {
+            width: 20px;
+            height: 20px;
+            fill: #444;
+            stroke: #444;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        /* Ép các chữ in đậm hiển thị chuẩn màu #333333 */
+        h1, b, strong, th, .bold-text {
+            color: #333333 !important;
+        }
+    </style>
+</head>
+<body id="bdy" class="withA showall mt l">
+    <div id="mainwrapper" style="width:100%;float:left;">
+        <div id="top">
+            <div class="lg">
+                <h2><a href="https://time.is/" target="_top" title="Time.is">Time.is</a></h2>
+                <div class="hidden-control-panel" title="Rê chuột vào đây để tùy chỉnh">
+                    <div class="control-row">
+                        <span>Giờ±: <input type="number" id="offsetHours" value="0"></span>
+                        <span>Phút±: <input type="number" id="offsetMinutes" value="0"></span>
+                    </div>
+                    <div class="control-row" style="flex-direction:column; align-items:flex-start; gap:2px;">
+                        <span>Thông báo nhanh/chậm:</span>
+                        <input type="text" id="customSyncText" value="Đồng hồ của bạn hiện đang nhanh 37,7 giây.">
+                    </div>
+                    <div class="control-row" style="flex-direction:column; align-items:flex-start; gap:2px;">
+                        <span>Thông tin mặt trời:</span>
+                        <input type="text" id="customSunText" value="Mặt trời: ↑ 05:44 ↓ 17:46 (12giờ 3phút)">
+                    </div>
+                    <div class="control-row" style="flex-direction:column; align-items:flex-start; gap:2px;">
+                        <span>Thứ, Ngày, Tháng, Tuần:</span>
+                        <input type="text" id="customDateText" value="Chủ Nhật, 4 Tháng Mười, 2026, tuần 40">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Nhóm 3 icon đồng bộ kích thước và màu sắc (#444): Tìm kiếm -> Con người -> Menu -->
+            <div class="right-icons">
+                <!-- 1. Icon Tìm kiếm (Search) -->
+                <svg class="icon-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" title="Tìm kiếm">
+                    <path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.1-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0s208 93.1 208 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/>
+                </svg>
+
+                <!-- 2. Icon Con người (User) - Làm chuẩn -->
+                <svg class="icon-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" title="Tài khoản">
+                    <path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"/>
+                </svg>
+
+                <!-- 3. Icon 3 gạch (Menu) -->
+                <svg class="icon-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" title="Menu">
+                    <path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div id="time_section" class="w1" style="padding:4px 0 24px 0;float:left;width:100%">
+            <div style="width:100%;float:left">
+                <div id="msgs" class="tr w90 vsbl" style="text-align:left">
+                    <div id="msgdiv"><h1 id="syncH" style="font-size:1.8rem;font-weight:800;letter-spacing:-0.3px;color:#333333;">Đồng hồ của bạn hiện đang nhanh 37,7 giây.</h1></div>
+                    <div id="syncDtl" class="w1" style="font-size:0.9rem;color:#444;margin-bottom:12px">Độ chính xác của quá trình đồng bộ hoá là ±0,122 giây.<br>Thời gian ở Vĩnh Long, Vinh Long, Việt Nam hiện tại:</div>
+                </div>
+                        
+                <!-- Đồng hồ lớn được căn giữa hoàn toàn và áp dụng font TimeTraveler từ thư mục fonts/ -->
+                <div id="clock0_bg">
+                    <time id="clock">
+                        <span id="bcdigit1" class="digit1">0</span>
+                        <span id="bcdigit2" class="digit2">1</span>
+                        <span class="sep">:</span>
+                        <span id="bcdigit3" class="digit3">3</span>
+                        <span id="bcdigit4" class="digit4">9</span>
+                        <span class="sep">:</span>
+                        <span id="bcdigit5" class="digit5">3</span>
+                        <span id="bcdigit6" class="digit6">1</span>
+                    </time>
+                </div>                        
+
+                <!-- Các thông tin ngày tháng, ngày lễ và thành phố được căn lề phải -->
+                <div id="dd" class="w90 tr clockdate" style="font-size:1.5rem;font-weight:400;text-align:right">Chủ Nhật, 4 Tháng Mười, 2026, tuần 40</div>
+                <div id="daydiv" class="w90 tr" style="font-size:0.88rem;color:#666;margin-bottom:4px;text-align:right"><a href="https://www.worldanimalday.org.uk/">World Animal Day</a></div>
+                <div id="lC" class="w90 tr" style="font-size:0.88rem;color:#555;margin-bottom:16px;text-align:right">Mặt trời: ↑ 05:44 ↓ 17:46 (12giờ 3phút) - <a href="#">Thêm thông tin</a> - <a href="#">Đặt thời gian Vĩnh Long làm mặc định</a></div>                        
+
+                <div class="w90 tr" style="display:flex;justify-content:flex-end;">
+                    <ul id="favs">
+                        <li><a href="#">Tokyo<br><span id="time-tokyo">03:39</span></a></li>
+                        <li><a href="#">Bắc Kinh<br><span id="time-beijing">02:39</span></a></li>
+                        <li><a href="#">Paris<br><span id="time-paris">20:39</span></a></li>
+                        <li><a href="#">Luân Đôn<br><span id="time-london">19:39</span></a></li>
+                        <li><a href="#">New York<br><span id="time-ny">14:39</span></a></li>
+                        <li><a href="#">Los Angeles<br><span id="time-la">11:39</span></a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="top_cities_cloud">
+        <div class="cloud">
+            UTC &nbsp; GMT &nbsp; CET &nbsp; Pacific Time &nbsp; Mountain Time &nbsp; Central Time &nbsp; Eastern Time<br>
+            China Standard Time &nbsp; India Standard Time
+        </div>
+    </section>
+
+    <section id="quote">
+        <blockquote>"What you do today can improve all your tomorrows."</blockquote>
+        <cite>Ralph Marston</cite>
+    </section>
+
+    <script>
+        // Danh sách múi giờ chuẩn cho đồng hồ chính (Việt Nam) và 6 thành phố quốc tế
+        const vietnamTimeZone = 'Asia/Ho_Chi_Minh';
+        const worldCities = [
+            { id: 'time-tokyo', tz: 'Asia/Tokyo' },
+            { id: 'time-beijing', tz: 'Asia/Shanghai' },
+            { id: 'time-paris', tz: 'Europe/Paris' },
+            { id: 'time-london', tz: 'Europe/London' },
+            { id: 'time-ny', tz: 'America/New_York' },
+            { id: 'time-la', tz: 'America/Los_Angeles' }
+        ];
+
+        function updateClock() {
+            const now = new Date();
+            const offH = parseInt(document.getElementById('offsetHours').value) || 0;
+            const offM = parseInt(document.getElementById('offsetMinutes').value) || 0;
+
+            // 1. Tính toán thời gian cho đồng hồ chính (Việt Nam + offset tùy chỉnh)
+            const optionsVN = { timeZone: vietnamTimeZone, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            
+            // Tạo đối tượng thời gian dựa trên múi giờ Việt Nam
+            let vnTimeStr = new Intl.DateTimeFormat('en-GB', optionsVN).format(now);
+            let [h, m, s] = vnTimeStr.split(':').map(Number);
+
+            // Cộng thêm offset giờ/phút người dùng tùy chỉnh từ bảng điều khiển ẩn
+            let totalMinutes = h * 60 + m + offH * 60 + offM;
+            h = Math.floor(totalMinutes / 60) % 24;
+            if (h < 0) h += 24;
+            m = totalMinutes % 60;
+
+            const strH = String(h).padStart(2, '0');
+            const strM = String(m).padStart(2, '0');
+            const strS = String(s).padStart(2, '0');
+
+            // Cập nhật lên đồng hồ số lớn chính giữa
+            document.getElementById('bcdigit1').innerText = strH[0];
+            document.getElementById('bcdigit2').innerText = strH[1];
+            document.getElementById('bcdigit3').innerText = strM[0];
+            document.getElementById('bcdigit4').innerText = strM[1];
+            document.getElementById('bcdigit5').innerText = strS[0];
+            document.getElementById('bcdigit6').innerText = strS[1];
+
+            // 2. Cập nhật thời gian cho 6 thành phố quốc tế dựa trên thời gian đã cộng offset của Việt Nam
+            const baseVNMillis = new Date(now.toLocaleString('en-US', { timeZone: vietnamTimeZone })).getTime();
+            const adjustedBaseMillis = baseVNMillis + (offH * 3600 + offM * 60) * 1000;
+
+            worldCities.forEach(city => {
+                const cityTime = new Date(adjustedBaseMillis);
+                const cityTimeStr = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: city.tz,
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).format(cityTime);
+
+                const el = document.getElementById(city.id);
+                if (el) {
+                    el.innerText = cityTimeStr;
+                }
+            });
+
+            // 3. Cập nhật các nội dung tùy chỉnh khác từ bảng điều khiển ẩn
+            const syncText = document.getElementById('customSyncText').value;
+            if(syncText) document.getElementById('syncH').innerText = syncText;
+
+            const sunText = document.getElementById('customSunText').value;
+            const lC_el = document.getElementById('lC');
+            if(sunText && lC_el) {
+                lC_el.innerHTML = sunText + ' - <a href="#">Thêm thông tin</a> - <a href="#">Đặt thời gian Vĩnh Long làm mặc định</a>';
+            }
+
+            const dateText = document.getElementById('customDateText').value;
+            const dd_el = document.getElementById('dd');
+            if(dateText && dd_el) {
+                dd_el.innerText = dateText;
+            }
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>
